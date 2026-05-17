@@ -12,6 +12,7 @@ A showcase of single-file web animation effects. Each folder is one self-contain
 | [`theme-circle-transition`](./theme-circle-transition) | Theme switch revealed as a circle expanding from the click point |
 | [`ease-reverse-menu`](./ease-reverse-menu) | Fullscreen menu reveal/close using asymmetric easing curves |
 | [`loop-path-trace`](./loop-path-trace) | A dot tracing a handwritten cursive "loop" path; CSS / SVG / GSAP variants + a Vara.js handwriting demo |
+| [`neumorphic-fingerprint-scan`](./neumorphic-fingerprint-scan) | Hover-driven neumorphic fingerprint button: press-in, two-pass etch-then-color self-draw, graceful fade-out |
 
 ## Usage
 

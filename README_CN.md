@@ -12,6 +12,7 @@
 | [`theme-circle-transition`](./theme-circle-transition) | 主题切换圆形扩散，以点击坐标为圆心向外揭示 |
 | [`ease-reverse-menu`](./ease-reverse-menu) | 全屏菜单揭示/收回，开启与关闭用不同缓动曲线 |
 | [`loop-path-trace`](./loop-path-trace) | 绿点沿手写连笔「loop」路径游走；CSS / SVG / GSAP 三套变体 + Vara.js 手写文字 demo |
+| [`neumorphic-fingerprint-scan`](./neumorphic-fingerprint-scan) | 拟物指纹扫描按钮：hover 按压凹陷、白刻痕→渐变色两阶段自绘、移出渐进消失 |
 
 ## 使用方式
 

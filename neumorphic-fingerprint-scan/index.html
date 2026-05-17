@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Neumorphic Fingerprint Scan</title>
+<style>
+  :root{
+    --bg:#e6e7ee;
+    --btn:#ecedf3;
+    --sd:#c2c4cf;
+    --sl:#ffffff;
+    --dot-idle:#ff5a6b;
+    --dot-scan:#27d3ef;
+    --raise:-14px -14px 28px var(--sl), 16px 16px 32px var(--sd),
+            inset 0 0 0 1px rgba(255,255,255,.4);
+    --press:inset -11px -11px 22px var(--sl), inset 13px 13px 24px var(--sd),
+            0 0 0 1px rgba(255,255,255,.3);
+    --press-ease:cubic-bezier(.22,.61,.36,1);
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    background:var(--bg);
+    display:flex;align-items:center;justify-content:center;
+    font-family:system-ui,sans-serif;
+  }
+  .stage{display:flex;flex-direction:column;align-items:center;gap:34px}
+
+  /* 拟物按钮：默认凸起；.on 时按下凹陷（~150ms 自然过渡，移出即弹回） */
+  .btn{
+    width:260px;height:260px;border-radius:50%;
+    background:var(--btn);
+    display:flex;align-items:center;justify-content:center;
+    position:relative;cursor:pointer;
+    box-shadow:var(--raise);
+    transition:box-shadow .16s var(--press-ease);
+  }
+  .btn::before{
+    content:"";position:absolute;inset:-26px;border-radius:50%;
+    background:radial-gradient(circle, rgba(255,255,255,.75), transparent 62%);
+    z-index:-1;opacity:1;
+    transition:opacity .35s var(--press-ease);
+  }
+  .btn.on{box-shadow:var(--press)}
+  .btn.on::before{opacity:.25}
+
+  /* 指纹：两层同一组中心线。draw 由 .on 触发（forwards 保持）；
+     移出时 JS 冻结当前 dashoffset，再让整枚 .fp 做 0.55s opacity 渐隐 */
+  .fp{
+    width:170px;height:206px;overflow:visible;
+    opacity:1;transition:opacity .55s ease;
+  }
+  .btn.off .fp{opacity:0}                /* 移出：整枚均匀淡出（匹配源视频 ~0.6s） */
+  .fp path{
+    fill:none;stroke-linecap:round;stroke-linejoin:round;
+    pathLength:1;stroke-dasharray:1;stroke-dashoffset:1;
+    animation-timing-function:ease-out;
+    animation-fill-mode:forwards;
+  }
+  .etch path{
+    stroke:#dcdde8;stroke-width:11;
+    filter:drop-shadow(-1px -1px 1px rgba(255,255,255,.95))
+           drop-shadow(1.4px 1.6px 1.4px rgba(150,152,172,.7));
+  }
+  .ink path{ stroke:url(#fpGrad);stroke-width:8.5; }
+  .btn.on .etch path{
+    animation-name:draw;animation-duration:1s;
+    animation-delay:calc(var(--i) * 0.018s);
+  }
+  .btn.on .ink path{
+    animation-name:draw;animation-duration:2.4s;
+    animation-delay:calc(0.45s + var(--i) * 0.055s);
+  }
+  @keyframes draw{ from{stroke-dashoffset:1} to{stroke-dashoffset:0} }
+
+  /* 状态点：默认红；.on 转青；移出随淡出复位 */
+  .dot{
+    width:13px;height:13px;border-radius:50%;
+    background:var(--dot-idle);
+    box-shadow:0 0 6px 1px rgba(255,90,107,.6);
+    transition:background .5s ease, box-shadow .5s ease;
+  }
+  .btn.on ~ .dot{
+    background:var(--dot-scan);
+    box-shadow:0 0 16px 5px rgba(39,211,239,.75);
+  }
+</style>
+</head>
+<body>
+  <div class="stage">
+    <div class="btn" id="btn">
+      <svg class="fp" viewBox="0 0 563 718" aria-hidden="true">
+        <defs>
+          <linearGradient id="fpGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%"  stop-color="#8b7cf6"/>
+            <stop offset="55%" stop-color="#7c8cf5"/>
+            <stop offset="100%" stop-color="#27d3ef"/>
+          </linearGradient>
+        </defs>
+        <g class="etch">
+<path d="M121.5 120.8 L123.4 115.0 L135.0 103.0 L165.0 79.3 L182.0 69.5 L221.0 53.5 L256.0 45.2 L289.0 41.0 L322.0 41.0 L364.8 45.9" pathLength="1" style="--i:0"/>
+<path d="M430.8 98.7 L390.0 84.6 L343.0 77.1 L302.0 77.0 L273.0 80.1 L244.0 85.5 L204.0 100.9 L187.2 110.6 L156.1 134.3 L131.3 160.0 L114.5 184.0 L98.6 215.0 L95.9 227.0 L90.5 238.0 L82.1 277.0 L79.4 387.0 L71.5 402.7 L54.7 417.5 L19.2 432.9" pathLength="1" style="--i:1"/>
+<path d="M407.8 132.0 L395.0 126.2 L353.0 116.2 L322.0 112.0 L287.0 112.1 L257.0 118.3 L248.0 122.7 L234.0 125.6 L204.0 141.4 L173.2 163.8" pathLength="1" style="--i:2"/>
+<path d="M102.8 133.8 L89.7 150.1 L74.3 177.0 L59.2 219.0 L56.7 235.0 L51.2 251.0 L40.5 338.0 L28.4 361.8 L14.2 371.9" pathLength="1" style="--i:3"/>
+<path d="M435.2 148.8 L463.7 173.3 L479.5 190.2 L495.4 213.0 L512.4 247.0 L520.9 281.8" pathLength="1" style="--i:4"/>
+<path d="M460.1 411.2 L464.5 403.0 L472.8 362.0 L476.0 328.0 L476.0 300.0 L472.5 268.0 L463.7 245.0 L454.3 228.0 L430.9 198.3 L406.0 177.7 L386.0 165.5 L364.0 157.6 L333.0 152.2 L288.0 153.1 L263.0 159.0 L228.0 174.4 L201.1 196.1 L178.0 225.0 L162.5 262.0 L155.2 298.0 L156.0 370.0 L152.6 403.0 L144.9 420.0 L130.0 441.8" pathLength="1" style="--i:5"/>
+<path d="M144.3 207.8 L160.2 182.2" pathLength="1" style="--i:6"/>
+<path d="M316.2 187.0 L326.0 185.5 L351.8 189.4" pathLength="1" style="--i:7"/>
+<path d="M285.8 188.0 L260.0 198.0 L237.0 213.5 L226.5 222.3 L210.5 244.0 L202.5 262.0 L195.1 292.0 L195.0 371.0 L192.7 393.0 L184.1 418.0 L166.4 455.0 L148.6 481.0 L125.9 504.9 L78.9 545.7 L61.1 558.3 L58.1 562.8" pathLength="1" style="--i:8"/>
+<path d="M377.3 199.2 L379.3 202.7 L405.9 223.1 L422.9 248.0 L431.8 276.0 L435.0 314.0 L432.6 371.0 L402.7 463.0 L400.5 478.0 L394.7 490.0 L371.2 574.0 L369.2 648.0 L378.0 672.9 L385.5 678.9" pathLength="1" style="--i:9"/>
+<path d="M82.2 596.6 L156.9 529.8 L181.9 503.0 L205.5 472.0 L223.2 437.0 L231.9 414.0 L239.8 375.0 L241.0 322.0 L239.1 293.0 L242.7 269.0 L250.6 253.1 L267.0 237.4 L287.0 229.2 L307.0 225.2 L329.0 224.0 L360.0 229.7 L373.0 238.3 L381.6 247.1 L392.5 269.0 L396.0 307.0 L394.9 352.0 L392.9 378.0 L383.7 415.0 L352.5 497.0 L322.4 563.0 L314.2 592.0 L312.0 624.0 L313.2 665.0 L322.7 694.0 L328.8 699.6" pathLength="1" style="--i:10"/>
+<path d="M130.0 240.2 L128.8 257.0 L125.3 267.0 L116.1 320.0 L116.0 367.0 L111.6 407.0 L103.4 424.0 L79.8 449.7 L35.2 473.9" pathLength="1" style="--i:11"/>
+<path d="M266.1 606.8 L274.6 577.0 L279.5 569.0 L298.6 515.0 L335.5 432.0 L352.9 369.0 L356.0 309.0 L352.3 283.0 L342.0 269.3 L330.0 264.3 L310.0 262.1 L291.3 272.1 L281.8 286.0 L277.5 298.0 L276.0 326.0 L278.0 372.0 L272.6 419.0 L255.9 459.0 L239.1 489.0 L215.6 521.9 L191.9 546.9 L150.7 586.5 L107.2 623.0" pathLength="1" style="--i:12"/>
+<path d="M313.0 392.8 L317.0 350.0 L317.0 313.2" pathLength="1" style="--i:13"/>
+<path d="M477.8 581.2 L473.5 577.0 L466.4 563.0 L466.1 536.0 L474.6 491.0 L488.6 451.0 L504.8 377.0 L506.0 346.0 L501.2 320.2" pathLength="1" style="--i:14"/>
+<path d="M304.6 429.2 L293.5 462.0 L279.1 494.0 L247.5 545.0 L217.7 584.0 L202.7 613.0 L195.1 642.0 L194.0 672.0 L196.0 688.8" pathLength="1" style="--i:15"/>
+<path d="M449.9 455.2 L448.5 467.0 L427.2 537.0 L419.1 578.0 L417.0 603.0 L418.1 624.0 L428.9 642.5" pathLength="1" style="--i:16"/>
+<path d="M96.9 479.2 L85.0 489.5 L43.2 514.6" pathLength="1" style="--i:17"/>
+<path d="M269.9 698.5 L265.4 690.0 L260.5 663.0 L261.7 655.2" pathLength="1" style="--i:18"/>
+        </g>
+        <g class="ink">
+<path d="M121.5 120.8 L123.4 115.0 L135.0 103.0 L165.0 79.3 L182.0 69.5 L221.0 53.5 L256.0 45.2 L289.0 41.0 L322.0 41.0 L364.8 45.9" pathLength="1" style="--i:0"/>
+<path d="M430.8 98.7 L390.0 84.6 L343.0 77.1 L302.0 77.0 L273.0 80.1 L244.0 85.5 L204.0 100.9 L187.2 110.6 L156.1 134.3 L131.3 160.0 L114.5 184.0 L98.6 215.0 L95.9 227.0 L90.5 238.0 L82.1 277.0 L79.4 387.0 L71.5 402.7 L54.7 417.5 L19.2 432.9" pathLength="1" style="--i:1"/>
+<path d="M407.8 132.0 L395.0 126.2 L353.0 116.2 L322.0 112.0 L287.0 112.1 L257.0 118.3 L248.0 122.7 L234.0 125.6 L204.0 141.4 L173.2 163.8" pathLength="1" style="--i:2"/>
+<path d="M102.8 133.8 L89.7 150.1 L74.3 177.0 L59.2 219.0 L56.7 235.0 L51.2 251.0 L40.5 338.0 L28.4 361.8 L14.2 371.9" pathLength="1" style="--i:3"/>
+<path d="M435.2 148.8 L463.7 173.3 L479.5 190.2 L495.4 213.0 L512.4 247.0 L520.9 281.8" pathLength="1" style="--i:4"/>
+<path d="M460.1 411.2 L464.5 403.0 L472.8 362.0 L476.0 328.0 L476.0 300.0 L472.5 268.0 L463.7 245.0 L454.3 228.0 L430.9 198.3 L406.0 177.7 L386.0 165.5 L364.0 157.6 L333.0 152.2 L288.0 153.1 L263.0 159.0 L228.0 174.4 L201.1 196.1 L178.0 225.0 L162.5 262.0 L155.2 298.0 L156.0 370.0 L152.6 403.0 L144.9 420.0 L130.0 441.8" pathLength="1" style="--i:5"/>
+<path d="M144.3 207.8 L160.2 182.2" pathLength="1" style="--i:6"/>
+<path d="M316.2 187.0 L326.0 185.5 L351.8 189.4" pathLength="1" style="--i:7"/>
+<path d="M285.8 188.0 L260.0 198.0 L237.0 213.5 L226.5 222.3 L210.5 244.0 L202.5 262.0 L195.1 292.0 L195.0 371.0 L192.7 393.0 L184.1 418.0 L166.4 455.0 L148.6 481.0 L125.9 504.9 L78.9 545.7 L61.1 558.3 L58.1 562.8" pathLength="1" style="--i:8"/>
+<path d="M377.3 199.2 L379.3 202.7 L405.9 223.1 L422.9 248.0 L431.8 276.0 L435.0 314.0 L432.6 371.0 L402.7 463.0 L400.5 478.0 L394.7 490.0 L371.2 574.0 L369.2 648.0 L378.0 672.9 L385.5 678.9" pathLength="1" style="--i:9"/>
+<path d="M82.2 596.6 L156.9 529.8 L181.9 503.0 L205.5 472.0 L223.2 437.0 L231.9 414.0 L239.8 375.0 L241.0 322.0 L239.1 293.0 L242.7 269.0 L250.6 253.1 L267.0 237.4 L287.0 229.2 L307.0 225.2 L329.0 224.0 L360.0 229.7 L373.0 238.3 L381.6 247.1 L392.5 269.0 L396.0 307.0 L394.9 352.0 L392.9 378.0 L383.7 415.0 L352.5 497.0 L322.4 563.0 L314.2 592.0 L312.0 624.0 L313.2 665.0 L322.7 694.0 L328.8 699.6" pathLength="1" style="--i:10"/>
+<path d="M130.0 240.2 L128.8 257.0 L125.3 267.0 L116.1 320.0 L116.0 367.0 L111.6 407.0 L103.4 424.0 L79.8 449.7 L35.2 473.9" pathLength="1" style="--i:11"/>
+<path d="M266.1 606.8 L274.6 577.0 L279.5 569.0 L298.6 515.0 L335.5 432.0 L352.9 369.0 L356.0 309.0 L352.3 283.0 L342.0 269.3 L330.0 264.3 L310.0 262.1 L291.3 272.1 L281.8 286.0 L277.5 298.0 L276.0 326.0 L278.0 372.0 L272.6 419.0 L255.9 459.0 L239.1 489.0 L215.6 521.9 L191.9 546.9 L150.7 586.5 L107.2 623.0" pathLength="1" style="--i:12"/>
+<path d="M313.0 392.8 L317.0 350.0 L317.0 313.2" pathLength="1" style="--i:13"/>
+<path d="M477.8 581.2 L473.5 577.0 L466.4 563.0 L466.1 536.0 L474.6 491.0 L488.6 451.0 L504.8 377.0 L506.0 346.0 L501.2 320.2" pathLength="1" style="--i:14"/>
+<path d="M304.6 429.2 L293.5 462.0 L279.1 494.0 L247.5 545.0 L217.7 584.0 L202.7 613.0 L195.1 642.0 L194.0 672.0 L196.0 688.8" pathLength="1" style="--i:15"/>
+<path d="M449.9 455.2 L448.5 467.0 L427.2 537.0 L419.1 578.0 L417.0 603.0 L418.1 624.0 L428.9 642.5" pathLength="1" style="--i:16"/>
+<path d="M96.9 479.2 L85.0 489.5 L43.2 514.6" pathLength="1" style="--i:17"/>
+<path d="M269.9 698.5 L265.4 690.0 L260.5 663.0 L261.7 655.2" pathLength="1" style="--i:18"/>
+        </g>
+      </svg>
+    </div>
+    <div class="dot"></div>
+  </div>
+<script>
+(function(){
+  var btn=document.getElementById('btn');
+  var paths=btn.querySelectorAll('.fp path');
+  var timer=null;
+  btn.addEventListener('mouseenter',function(){
+    if(timer){clearTimeout(timer);timer=null;}
+    btn.classList.remove('off');
+    paths.forEach(function(p){p.style.strokeDashoffset='';}); // 清冻结，让 draw 从头跑
+    // 强制重排，确保移除 .on 后再加能重启动画
+    void btn.offsetWidth;
+    btn.classList.add('on');
+  });
+  btn.addEventListener('mouseleave',function(){
+    // 冻结每条当前的 dashoffset —— 移除动画后纹路不瞬移，留给 opacity 渐隐
+    paths.forEach(function(p){
+      p.style.strokeDashoffset=getComputedStyle(p).strokeDashoffset;
+    });
+    btn.classList.remove('on');   // 按钮弹回 + 停止描绘
+    btn.classList.add('off');     // 整枚 .fp 0.55s opacity 渐进消失
+    timer=setTimeout(function(){
+      btn.classList.remove('off');
+      paths.forEach(function(p){p.style.strokeDashoffset='';}); // 复位待下次
+      timer=null;
+    },560);
+  });
+})();
+</script>
+</body>
+</html>
