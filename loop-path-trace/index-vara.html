@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<title>handwriting · Vara.js demo</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    background:#1e1f2e;
+    display:flex;flex-direction:column;
+    align-items:center;justify-content:center;gap:28px;
+    font-family:ui-sans-serif,system-ui,sans-serif;
+  }
+  /* Vara 会把 SVG 笔迹注入这个容器 */
+  #pen{width:min(86vw,820px)}
+  #pen svg{width:100%;height:auto;overflow:visible}
+  .hint{
+    color:#6e7081;font-size:13px;letter-spacing:.04em;
+    user-select:none;cursor:pointer;transition:color .2s;
+  }
+  .hint:hover{color:#3ecf8e}
+</style>
+</head>
+<body>
+  <div id="pen"></div>
+  <div class="hint" id="replay">↻ 点此重写</div>
+
+  <script src="https://cdn.jsdelivr.net/npm/vara@1.4.1/src/vara.min.js"></script>
+  <script>
+    /* —— 可配置 —— */
+    const TEXT       = "stay curious";  // 想写的文字（改这里）
+    const COLOR      = "#3ecf8e";       // 笔迹颜色
+    const FONT_SIZE  = 88;              // 字号
+    const STROKE     = 1.4;             // 笔画粗细
+    const DURATION   = 2600;            // 书写时长(ms)，越大越慢
+    // 内置手写字体，可换 Pacifico / ShadowsIntoLight / SatisfySL
+    const FONT = "https://cdn.jsdelivr.net/gh/akzhy/Vara@master/fonts/Satisfy/SatisfySL.json";
+
+    function draw(){
+      document.getElementById("pen").innerHTML = "";
+      new Vara("#pen", FONT, [
+        { text: TEXT, duration: DURATION }
+      ], {
+        fontSize: FONT_SIZE,
+        strokeWidth: STROKE,
+        color: COLOR,
+        textAlign: "center",
+        autoAnimation: true
+      });
+    }
+
+    draw();
+    document.getElementById("replay").addEventListener("click", draw);
+  </script>
+</body>
+</html>

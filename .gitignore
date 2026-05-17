@@ -1,0 +1,11 @@
+# macOS
+.DS_Store
+
+# 依赖与构建产物
+node_modules/
+dist/
+*.tsbuildinfo
+
+# 日志
+*.log
+npm-debug.log*

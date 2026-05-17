@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tile Grid Reveal · jacky-css</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg:          #0a0a0b;
+      --text:        #e5e5e7;
+      --text-muted:  #6b6b76;
+      --text-dim:    #3f3f47;
+      --primary:     #00ff88;
+      --primary-dim: rgba(0, 255, 136, 0.10);
+      --border:      rgba(255, 255, 255, 0.06);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 2rem;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(var(--border) 1px, transparent 1px),
+        linear-gradient(90deg, var(--border) 1px, transparent 1px);
+      background-size: 48px 48px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .meta {
+      position: relative;
+      z-index: 1;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .label {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.6875rem;
+      font-weight: 500;
+      color: var(--primary);
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
+
+    .label::before,
+    .label::after {
+      content: '';
+      display: block;
+      width: 24px;
+      height: 1px;
+      background: var(--primary);
+      opacity: 0.5;
+    }
+
+    .scene-wrap {
+      position: relative;
+      z-index: 1;
+      width: min(680px, 88vw);
+      aspect-ratio: 1;
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow:
+        0 0 0 1px var(--border),
+        0 32px 80px rgba(0, 0, 0, 0.8);
+      cursor: none;
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+      cursor: none;
+    }
+
+    .hint {
+      position: relative;
+      z-index: 1;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.6875rem;
+      color: var(--text-dim);
+      letter-spacing: 0.06em;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .hint-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--text-dim);
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 0.3; }
+      50%       { opacity: 1; }
+    }
+
+    .cursor {
+      position: fixed;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--primary);
+      box-shadow: 0 0 12px var(--primary);
+      pointer-events: none;
+      transform: translate(-50%, -50%);
+      transition: opacity 0.2s;
+      opacity: 0;
+      z-index: 100;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="meta">
+    <div class="label">Animation · 002 · Tile Grid Reveal</div>
+  </div>
+
+  <div class="scene-wrap" id="sceneWrap">
+    <canvas id="canvas"></canvas>
+  </div>
+
+  <div class="hint">
+    <span class="hint-dot"></span>
+    鼠标移动 · 光标附近网格放大 · 延迟跟随产生波浪
+  </div>
+
+  <div class="cursor" id="cursor"></div>
+
+  <script src="https://unpkg.com/gsap@3/dist/gsap.min.js"></script>
+  <script>
+    /* ============================================================
+     *  Canvas Grid Mouse Effect
+     *  基于 CodePen (Tom Miller) — Canvas Grid Mouse Effect (v2)
+     *  https://codepen.io/creativeocean/pen/emBOove
+     * ============================================================ */
+
+    const IMAGE_URL = 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=2000&q=80';
+    const DOT_SIZE  = 45;
+    const CW        = 2000;
+    const CH        = 2000;
+    const TAU       = Math.PI * 2;
+
+    const canvas   = document.getElementById('canvas');
+    const ctx      = canvas.getContext('2d');
+    const wrap     = document.getElementById('sceneWrap');
+    const cursorEl = document.getElementById('cursor');
+
+    canvas.width = CW;
+    canvas.height = CH;
+
+    // 鼠标初始在画布外，避免进入时出现全屏方块
+    const m = { x: -CW * 2, y: -CH * 2, s: 0.01, x2: -CW * 2, y2: -CH * 2 };
+
+    // GSAP quickTo
+    const xTo = gsap.quickTo(m, 'x', { duration: 2, ease: 'expo' });
+    const yTo = gsap.quickTo(m, 'y', { duration: 2, ease: 'expo' });
+    const sTo = gsap.quickTo(m, 's', { duration: 2, ease: 'power2' });
+
+    const dots = [];
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.src = IMAGE_URL;
+
+    img.onload = () => {
+      // 构建网格
+      for (let x = 0; x <= CW; x += DOT_SIZE) {
+        for (let y = 0; y <= CH; y += DOT_SIZE) {
+          dots.push({ x, y });
+        }
+      }
+
+      // 坐标转换：canvas 空间 → 图片像素空间
+      const scaleX = img.naturalWidth / CW;
+      const scaleY = img.naturalHeight / CH;
+
+      // 放大重绘
+      function drawZoom(c) {
+        const d = Math.hypot(c.x - m.x, c.y - m.y);
+        const s = 1 - clamp01(d / CW / m.s);
+        if (s < 0.001) return;
+        const dotScaled = DOT_SIZE * s;
+        const srcX = (c.x + dotScaled / 2) * scaleX;
+        const srcY = (c.y + dotScaled / 2) * scaleY;
+        const srcW = (DOT_SIZE - dotScaled) * scaleX;
+        const srcH = (DOT_SIZE - dotScaled) * scaleY;
+        ctx.drawImage(
+          img,
+          srcX, srcY, srcW, srcH,
+          c.x, c.y, DOT_SIZE, DOT_SIZE
+        );
+      }
+
+      // 白点
+      function drawDot(c) {
+        const d = Math.hypot(c.x - m.x, c.y - m.y);
+        const s = 1 - clamp01(d / CW / m.s);
+        ctx.fillStyle = '#fff';
+        ctx.beginPath();
+        ctx.arc(c.x, c.y, DOT_SIZE * 0.15 * s, 0, TAU);
+        ctx.fill();
+      }
+
+      function clamp01(v) { return v < 0 ? 0 : v > 1 ? 1 : v; }
+
+      // 主循环
+      gsap.ticker.add(() => {
+        const d = Math.hypot(m.x - m.x2, m.y - m.y2);
+        sTo(d / CW * 2);
+
+        ctx.clearRect(0, 0, CW, CH);
+        ctx.drawImage(img, 0, 0, img.naturalWidth, img.naturalHeight, 0, 0, CW, CH);
+        dots.forEach(drawZoom);
+        dots.forEach(drawDot);
+      });
+    };
+
+    /* ---------- 鼠标事件（监听 canvas 本身） ---------- */
+    canvas.addEventListener('pointermove', e => {
+      // offsetX/offsetY 相对于事件目标元素，直接按比例映射到 canvas 坐标
+      m.x2 = e.offsetX / canvas.offsetWidth * CW;
+      m.y2 = e.offsetY / canvas.offsetHeight * CH;
+      xTo(m.x2);
+      yTo(m.y2);
+    });
+
+    canvas.addEventListener('pointerenter', e => {
+      const px = e.offsetX / canvas.offsetWidth * CW;
+      const py = e.offsetY / canvas.offsetHeight * CH;
+      m.x = m.x2 = px;
+      m.y = m.y2 = py;
+      m.s = 0.01;
+      xTo(px);
+      yTo(py);
+      sTo(0.01);
+      cursorEl.style.opacity = '1';
+    });
+
+    canvas.addEventListener('pointerleave', () => {
+      // 不移动 m.x2/y2，让 m.s 通过 sTo(0) 自然衰减
+      cursorEl.style.opacity = '0';
+    });
+
+    /* ---------- 自定义光标 ---------- */
+    document.addEventListener('pointermove', e => {
+      cursorEl.style.left = `${e.clientX}px`;
+      cursorEl.style.top  = `${e.clientY}px`;
+    });
+  </script>
+
+</body>
+</html>

@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<title>loop · path trace</title>
+<style>
+  :root{
+    --bg:#1e1f2e;
+    --ink:#353753;     /* 连笔字 */
+    --gray:#6e7081;    /* 两端引导横线 */
+    --dot:#3ecf8e;     /* 运动点 */
+
+    /* —— 可配置：运动参数 —— */
+    --dur:3s;                 /* 单程时长；往返一圈 = 2×--dur */
+    --ease:ease-in-out;       /* 缓动：慢→快→慢；可换 cubic-bezier(...) / linear */
+    --dir:alternate;          /* alternate=双向往返；normal=单向循环 */
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    background:var(--bg);
+    display:flex;align-items:center;justify-content:center;
+  }
+  /* 固定像素尺寸，使 offset-path 的 path() 坐标与 SVG viewBox 1:1 对齐 */
+  .stage{position:relative;width:1000px;height:460px}
+  svg{position:absolute;inset:0;width:1000px;height:460px;overflow:visible}
+  .ink{fill:none;stroke:var(--ink);stroke-width:16;stroke-linecap:round;stroke-linejoin:round}
+  .gray{fill:none;stroke:var(--gray);stroke-width:16;stroke-linecap:round;stroke-linejoin:round}
+
+  .dot{
+    position:absolute;left:0;top:0;
+    width:18px;height:18px;border-radius:50%;
+    background:var(--dot);
+    /* 运动轨迹 = 左灰横 + 连笔字 + 右灰横 首尾相接的单一连续路径 */
+    offset-path:path("M 60 300 L 175 300 C 230 300 235 120 280 90 C 320 65 335 130 305 200 C 285 250 290 300 330 300 C 355 300 360 225 405 225 C 445 225 445 300 405 300 C 440 300 470 300 475 300 C 475 300 478 225 520 225 C 560 225 560 300 520 300 C 555 300 592 300 600 270 C 606 210 600 178 609 163 C 615 153 623 175 625 235 C 627 320 627 382 600 410 C 580 432 558 410 574 369 C 585 340 620 312 660 300 L 850 300");
+    offset-rotate:0deg;
+    offset-anchor:center;
+    animation:run var(--dur) var(--ease) infinite var(--dir);
+  }
+  @keyframes run{ to{ offset-distance:100% } }
+</style>
+</head>
+<body>
+  <div class="stage">
+    <svg viewBox="0 0 1000 460" aria-hidden="true">
+      <!-- 静态美术：两端灰色引导横线（与运动轨迹的两端直段几何一致） -->
+      <path class="gray" d="M 60 300 L 175 300"/>
+      <path class="gray" d="M 660 300 L 850 300"/>
+      <!-- 静态美术：一笔不断的 cursive 小写 loop -->
+      <path class="ink" d="M 175 300
+        C 230 300 235 120 280 90
+        C 320 65 335 130 305 200
+        C 285 250 290 300 330 300
+        C 355 300 360 225 405 225
+        C 445 225 445 300 405 300
+        C 440 300 470 300 475 300
+        C 475 300 478 225 520 225
+        C 560 225 560 300 520 300
+        C 555 300 592 300 600 270
+        C 606 210 600 178 609 163
+        C 615 153 623 175 625 235
+        C 627 320 627 382 600 410
+        C 580 432 558 410 574 369
+        C 585 340 620 312 660 300"/>
+    </svg>
+    <div class="dot"></div>
+  </div>
+</body>
+</html>

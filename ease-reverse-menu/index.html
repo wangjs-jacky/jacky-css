@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ease Reverse Menu</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    /* --c: 揭示进度 0(关) → 1(开)，驱动 clip-path */
+    --c: 0;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    background:#000;
+    overflow:hidden;
+    font-family:"Pixelify Sans", ui-monospace, "SFMono-Regular", Menlo, monospace;
+    color:#fff;
+  }
+  .stage{position:fixed;inset:0}
+
+  /* ---- 关闭态：像素标题 ---- */
+  .title{
+    position:absolute;inset:0;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    gap:.05em;
+    font-weight:700;
+    font-size:clamp(56px,11vw,160px);
+    line-height:.95;
+    letter-spacing:.06em;
+    user-select:none;
+    text-shadow:0 0 1px #fff;
+  }
+
+  /* ---- 散落装饰图块（固定坐标，无闲置漂移）---- */
+  .tile{
+    position:absolute;width:90px;height:120px;
+    border-radius:3px;overflow:hidden;
+    box-shadow:0 6px 20px rgba(0,0,0,.5);
+    background-size:cover;background-position:center;
+    will-change:transform,opacity;
+  }
+
+  /* ---- 全屏菜单层 ---- */
+  .menu{
+    position:fixed;inset:0;z-index:5;
+    background-size:cover;background-position:center;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    gap:.15em;
+    /* clip-path 以屏幕中心为锚点，从 tile 大小的小矩形扩张到全屏 */
+    clip-path: inset(
+      calc((1 - var(--c)) * 50%)
+      calc((1 - var(--c)) * 46%)
+      round calc((1 - var(--c)) * 4px)
+    );
+  }
+  .menu::before{
+    content:"";position:absolute;inset:0;
+    background:linear-gradient(180deg,rgba(10,14,30,.35),rgba(10,14,30,.55));
+  }
+  .menu li{
+    position:relative;list-style:none;
+    font-weight:700;
+    font-size:clamp(20px,3.4vw,40px);
+    letter-spacing:.08em;
+    color:#eef1ff;
+    text-shadow:0 2px 6px rgba(0,0,0,.6);
+    will-change:transform,opacity;
+  }
+
+  /* ---- TOGGLE 按钮 ---- */
+  .toggle{
+    position:fixed;top:18px;right:18px;z-index:20;
+    display:flex;align-items:center;gap:10px;
+    padding:12px 20px;
+    background:#2b3a73;border:1px solid #4a5da8;border-radius:4px;
+    color:#fff;font:inherit;font-weight:700;font-size:14px;letter-spacing:.12em;
+    cursor:pointer;
+  }
+  .toggle:hover{background:#33458a}
+  .toggle b{font-size:16px;line-height:1}
+
+  @media (prefers-reduced-motion:reduce){
+    .menu,.menu li,.tile{transition:none!important}
+  }
+</style>
+</head>
+<body>
+  <div class="stage">
+    <div class="title"><span>HUMAN</span><span>ZERO</span></div>
+    <div id="tiles"></div>
+
+    <ul class="menu" id="menu">
+      <li>[NEW GAME]</li>
+      <li>[MISSIONS]</li>
+      <li>[SKILLS]</li>
+      <li>[QUEST LOG]</li>
+      <li>[ABOUT PLAYER]</li>
+      <li>[SETTINGS]</li>
+      <li>[EXIT]</li>
+    </ul>
+  </div>
+
+  <button class="toggle" id="toggle"><b>≡</b> TOGGLE MENU</button>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+  <script>
+  // ---- 占位图（duotone SVG data-URI，离线可用，验证的是运动不是图）----
+  const tilePalette = ['#3a6ea5','#c97b5a','#5a9bc9','#b8607e','#6fae8f','#8a6fb0','#c9a05a'];
+  function tileSVG(c){
+    const s=`<svg xmlns='http://www.w3.org/2000/svg' width='90' height='120'>
+      <rect width='90' height='120' fill='${c}'/>
+      <circle cx='45' cy='42' r='26' fill='rgba(255,255,255,.25)'/>
+      <rect y='78' width='90' height='42' fill='rgba(0,0,0,.22)'/></svg>`;
+    return "data:image/svg+xml;utf8,"+encodeURIComponent(s);
+  }
+  const faceSVG = "data:image/svg+xml;utf8,"+encodeURIComponent(
+    `<svg xmlns='http://www.w3.org/2000/svg' width='1200' height='800'>
+       <defs><radialGradient id='g' cx='50%' cy='42%' r='65%'>
+         <stop offset='0%' stop-color='#caa089'/><stop offset='55%' stop-color='#7d8bb3'/>
+         <stop offset='100%' stop-color='#2b3556'/></radialGradient></defs>
+       <rect width='1200' height='800' fill='url(#g)'/>
+       <ellipse cx='430' cy='360' rx='70' ry='44' fill='rgba(20,24,46,.7)'/>
+       <ellipse cx='770' cy='360' rx='70' ry='44' fill='rgba(20,24,46,.7)'/>
+       <circle cx='430' cy='360' r='20' fill='#0c1024'/><circle cx='770' cy='360' r='20' fill='#0c1024'/></svg>`);
+  document.getElementById('menu').style.backgroundImage = `url("${faceSVG}")`;
+
+  // ---- 生成散落图块（固定坐标）----
+  const POS = [
+    [6,4],[26,9],[46,3],[68,28],[88,15],[3,42],[14,76],
+    [48,80],[33,52],[70,70],[90,55],[58,12],[80,88]
+  ];
+  const tilesWrap = document.getElementById('tiles');
+  const tiles = POS.map(([x,y],i)=>{
+    const d=document.createElement('div');
+    d.className='tile';
+    d.style.left=x+'vw'; d.style.top=y+'vh';
+    d.style.transform=`rotate(${(i*53%17)-8}deg)`;
+    d.style.backgroundImage=`url("${tileSVG(tilePalette[i%tilePalette.length])}")`;
+    tilesWrap.appendChild(d); return d;
+  });
+
+  const root  = document.documentElement;
+  const menu  = document.getElementById('menu');
+  const items = [...menu.querySelectorAll('li')];
+
+  // 初始关闭态
+  gsap.set(items,{y:18,autoAlpha:0});
+
+  let open=false;
+
+  function toCenter(el){
+    const r=el.getBoundingClientRect();
+    return {
+      x:(innerWidth/2 - (r.left+r.width/2)),
+      y:(innerHeight/2 - (r.top +r.height/2))
+    };
+  }
+
+  function play(){
+    open=true;
+    // 面板揭示：power3.out，0.42s —— 开启曲线
+    gsap.to(root,{'--c':1,duration:.42,ease:'power3.out',overwrite:'auto'});
+    // 菜单项自上而下错落进入
+    gsap.to(items,{y:0,autoAlpha:1,duration:.32,ease:'power2.out',
+      stagger:.035,delay:.14,overwrite:'auto'});
+    // 图块向屏幕中心汇聚 + 放大 + 淡出
+    tiles.forEach(t=>{
+      const c=toCenter(t);
+      gsap.to(t,{x:c.x*.85,y:c.y*.85,scale:1.5,autoAlpha:0,
+        duration:.32,ease:'power2.in',overwrite:'auto'});
+    });
+  }
+
+  function reverse(){
+    open=false;
+    // easeReverse 灵魂：关闭 ≠ 开启的对称倒放
+    // 不同曲线 power2.inOut，时长更长 0.55s
+    gsap.to(root,{'--c':0,duration:.55,ease:'power2.inOut',overwrite:'auto'});
+    // 菜单项自下而上退场（stagger 方向相反）
+    gsap.to(items,{y:18,autoAlpha:0,duration:.3,ease:'power1.in',
+      stagger:{each:.03,from:'end'},overwrite:'auto'});
+    // 图块从中心回弹飞回原散落位
+    tiles.forEach(t=>{
+      gsap.to(t,{x:0,y:0,scale:1,autoAlpha:1,
+        duration:.5,ease:'power2.inOut',overwrite:'auto'});
+    });
+  }
+
+  // 点击即切换；overwrite:'auto' 让动画进行中点击从当前实时值无缝反向
+  document.getElementById('toggle').addEventListener('click',()=> open?reverse():play());
+  </script>
+</body>
+</html>

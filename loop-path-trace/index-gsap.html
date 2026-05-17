@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<title>loop · path trace（方案 C · GSAP MotionPath）</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{height:100%}
+  body{background:#1e1f2e;display:flex;align-items:center;justify-content:center}
+  svg{width:min(86vw,1000px);height:auto;overflow:visible}
+</style>
+</head>
+<body>
+  <svg viewBox="0 0 1000 460" aria-label="loop loading">
+    <!-- 轨迹：合并连续路径，stroke none 隐藏，仅供 GSAP MotionPath 使用 -->
+    <path id="path" fill="none" stroke="none"
+      d="M 60 300 L 175 300
+         C 230 300 235 120 280 90
+         C 320 65 335 130 305 200
+         C 285 250 290 300 330 300
+         C 355 300 360 225 405 225
+         C 445 225 445 300 405 300
+         C 440 300 470 300 475 300
+         C 475 300 478 225 520 225
+         C 560 225 560 300 520 300
+         C 555 300 592 300 600 270
+         C 606 210 600 178 609 163
+         C 615 153 623 175 625 235
+         C 627 320 627 382 600 410
+         C 580 432 558 410 574 369
+         C 585 340 620 312 660 300
+         L 850 300"/>
+
+    <!-- 静态美术 1：两端灰色引导横线 -->
+    <g fill="none" stroke="#6e7081" stroke-width="16" stroke-linecap="round">
+      <path d="M 60 300 L 175 300"/>
+      <path d="M 660 300 L 850 300"/>
+    </g>
+
+    <!-- 静态美术 2：一笔不断的 cursive 小写 loop -->
+    <path fill="none" stroke="#353753" stroke-width="16"
+      stroke-linecap="round" stroke-linejoin="round"
+      d="M 175 300
+         C 230 300 235 120 280 90
+         C 320 65 335 130 305 200
+         C 285 250 290 300 330 300
+         C 355 300 360 225 405 225
+         C 445 225 445 300 405 300
+         C 440 300 470 300 475 300
+         C 475 300 478 225 520 225
+         C 560 225 560 300 520 300
+         C 555 300 592 300 600 270
+         C 606 210 600 178 609 163
+         C 615 153 623 175 625 235
+         C 627 320 627 382 600 410
+         C 580 432 558 410 574 369
+         C 585 340 620 312 660 300"/>
+
+    <!-- 运动点 -->
+    <circle id="dot" r="9" fill="#3ecf8e"/>
+  </svg>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/MotionPathPlugin.min.js"></script>
+  <script>
+    gsap.registerPlugin(MotionPathPlugin);
+
+    /* —— 可配置：运动参数 —— */
+    const DURATION = 3;            // 单程秒数；yoyo 往返一圈 = 2×DURATION
+    const EASE     = "sine.inOut"; // 慢→快→慢；可换 "power2.inOut" / "none"(匀速)
+    const YOYO     = true;         // true=双向往返；false=单向循环
+
+    gsap.to("#dot", {
+      duration: DURATION,
+      ease: EASE,
+      repeat: -1,
+      yoyo: YOYO,
+      motionPath: {
+        path: "#path",
+        align: "#path",
+        alignOrigin: [0.5, 0.5],
+        autoRotate: false       // 圆点无需朝向切线
+      }
+    });
+  </script>
+</body>
+</html>

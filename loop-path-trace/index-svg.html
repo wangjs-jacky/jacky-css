@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<title>loop · path trace（方案 B · SVG animateMotion）</title>
+<style>
+  /* 纯 SVG 实现：不写 CSS 动画、不写 JS。仅用此 CSS 居中铺底 */
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{height:100%}
+  body{background:#1e1f2e;display:flex;align-items:center;justify-content:center}
+  svg{width:min(86vw,1000px);height:auto;overflow:visible}
+</style>
+</head>
+<body>
+  <!-- viewBox 内统一坐标系；animateMotion 沿 #trace 走，与坐标系天然对齐 -->
+  <svg viewBox="0 0 1000 460" aria-label="loop loading">
+    <!-- 轨迹：左灰横 + 连笔字 + 右灰横 首尾相接的单一连续路径，仅供运动用，不描边 -->
+    <path id="trace" fill="none" stroke="none"
+      d="M 60 300 L 175 300
+         C 230 300 235 120 280 90
+         C 320 65 335 130 305 200
+         C 285 250 290 300 330 300
+         C 355 300 360 225 405 225
+         C 445 225 445 300 405 300
+         C 440 300 470 300 475 300
+         C 475 300 478 225 520 225
+         C 560 225 560 300 520 300
+         C 555 300 592 300 600 270
+         C 606 210 600 178 609 163
+         C 615 153 623 175 625 235
+         C 627 320 627 382 600 410
+         C 580 432 558 410 574 369
+         C 585 340 620 312 660 300
+         L 850 300"/>
+
+    <!-- 静态美术 1：两端灰色引导横线 -->
+    <g fill="none" stroke="#6e7081" stroke-width="16" stroke-linecap="round">
+      <path d="M 60 300 L 175 300"/>
+      <path d="M 660 300 L 850 300"/>
+    </g>
+
+    <!-- 静态美术 2：一笔不断的 cursive 小写 loop -->
+    <path fill="none" stroke="#353753" stroke-width="16"
+      stroke-linecap="round" stroke-linejoin="round"
+      d="M 175 300
+         C 230 300 235 120 280 90
+         C 320 65 335 130 305 200
+         C 285 250 290 300 330 300
+         C 355 300 360 225 405 225
+         C 445 225 445 300 405 300
+         C 440 300 470 300 475 300
+         C 475 300 478 225 520 225
+         C 560 225 560 300 520 300
+         C 555 300 592 300 600 270
+         C 606 210 600 178 609 163
+         C 615 153 623 175 625 235
+         C 627 320 627 382 600 410
+         C 580 432 558 410 574 369
+         C 585 340 620 312 660 300"/>
+
+    <!-- 运动点：沿 #trace 双向往返、每程 ease-in-out -->
+    <circle r="9" fill="#3ecf8e">
+      <!-- dur 改这一处即可调速；keyPoints 0;1;0 = 去→回（SMIL 无 alternate，用此法做双向）
+           keySplines 两段均 0.42 0 0.58 1 = 每程各套一次 ease-in-out（慢→快→慢） -->
+      <animateMotion dur="3s" repeatCount="indefinite"
+        calcMode="spline"
+        keyPoints="0;1;0" keyTimes="0;0.5;1"
+        keySplines="0.42 0 0.58 1; 0.42 0 0.58 1"
+        rotate="0">
+        <mpath href="#trace"/>
+      </animateMotion>
+    </circle>
+  </svg>
+</body>
+</html>
